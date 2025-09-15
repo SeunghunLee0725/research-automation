@@ -1,4 +1,5 @@
 import { apiEndpoints } from '../../config/api';
+import { api } from '../../utils/api';
 import React, { useState } from 'react';
 import {
   Box,
@@ -202,20 +203,8 @@ const PaperList: React.FC = () => {
         }
       });
       
-      // Backend API에 저장 요청
-      const response = await fetch(apiEndpoints.savePapers, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          papers: cleanPapers,
-          searchInfo: searchInfo,
-          overwrite: overwrite 
-        }),
-      });
-      
-      const result = await response.json();
+      // Backend API에 저장 요청 (인증 포함)
+      const result = await api.savePapers(cleanPapers, searchInfo);
       
       // Check if overwrite confirmation is required
       if (result.requiresConfirmation) {
@@ -227,10 +216,10 @@ const PaperList: React.FC = () => {
         return;
       }
       
-      if (response.ok) {
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000);
-        console.log('Save result:', result);
+      // Check if save was successful
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+      console.log('Save result:', result);
         
         let message = '';
         if (result.count > 0) {
@@ -248,10 +237,6 @@ const PaperList: React.FC = () => {
         alert(message);
         // Clear selection after successful save
         setSelectedPapers(new Set());
-      } else {
-        console.error('Failed to save papers:', result);
-        alert('Failed to save papers: ' + (result.error || 'Unknown error'));
-      }
     } catch (error) {
       console.error('Error saving papers:', error);
       alert('Error saving papers. Please check if the server is running on port 3001.');
