@@ -135,12 +135,18 @@ function enrichPaperWithJournalInfo(paper) {
 app.get('/api/scholar', async (req, res) => {
   try {
     const { q, num, as_ylo, as_yhi } = req.query;
-    const serpApiKey = process.env.VITE_SERPAPI_KEY;
+    const serpApiKey = process.env.SERPAPI_KEY || process.env.VITE_SERPAPI_KEY;
     
     console.log('Scholar API called with query:', q);
+    console.log('SerpAPI key present:', !!serpApiKey);
     
     if (!q) {
       return res.status(400).json({ error: 'Query parameter is required' });
+    }
+    
+    if (!serpApiKey) {
+      console.error('SERPAPI_KEY not configured');
+      return res.status(500).json({ error: 'Search API not configured. Please set SERPAPI_KEY environment variable.' });
     }
 
     const url = `https://serpapi.com/search.json`;
@@ -155,13 +161,17 @@ app.get('/api/scholar', async (req, res) => {
       scisbd: 0,  // Sort by relevance
     };
 
-    console.log('Calling SerpAPI with params:', params);
+    console.log('Calling SerpAPI with params:', { ...params, api_key: '[REDACTED]' });
     const response = await axios.get(url, { params });
     console.log('SerpAPI response received, result count:', response.data.organic_results?.length || 0);
     
     res.json(response.data);
   } catch (error) {
     console.error('Scholar API Error:', error.message);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    }
     res.status(500).json({ 
       error: 'Failed to fetch from Google Scholar',
       message: error.message 
