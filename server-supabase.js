@@ -34,13 +34,16 @@ function getSupabase() {
 
 // Middleware to verify JWT token and get user
 async function authenticateUser(req, res, next) {
+  console.log('Auth middleware - Headers:', req.headers);
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('Auth failed - No Bearer token. Auth header:', authHeader);
     return res.status(401).json({ error: 'No authorization token provided' });
   }
 
   const token = authHeader.replace('Bearer ', '');
+  console.log('Auth middleware - Token extracted:', token ? 'Present' : 'Missing');
 
   try {
     // Verify the JWT token with Supabase
