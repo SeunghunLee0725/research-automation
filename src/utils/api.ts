@@ -11,6 +11,8 @@ async function getAuthHeaders() {
     throw new Error('No active session');
   }
   
+  console.log('Session found, access token:', session.access_token ? 'Present' : 'Missing');
+  
   return {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${session.access_token}`
@@ -21,14 +23,23 @@ async function getAuthHeaders() {
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const headers = await getAuthHeaders();
   
-  const response = await fetch(`${API_BASE_URL}${url}`, {
-    ...options,
+  const fullUrl = `${API_BASE_URL}${url}`;
+  console.log('Fetching:', fullUrl);
+  console.log('Headers:', headers);
+  
+  const fetchOptions = {
+    method: options.method || 'GET',
     headers: {
       ...headers,
       ...options.headers
     },
-    credentials: 'include'
-  });
+    body: options.body,
+    credentials: 'include' as RequestCredentials
+  };
+  
+  console.log('Fetch options:', fetchOptions);
+  
+  const response = await fetch(fullUrl, fetchOptions);
   
   if (response.status === 401) {
     // Token expired or invalid, sign out
