@@ -164,6 +164,51 @@ app.get('/api/scholar', async (req, res) => {
     console.log('Calling SerpAPI with params:', { ...params, api_key: '[REDACTED]' });
     console.log('API Key first 10 chars:', serpApiKey ? serpApiKey.substring(0, 10) + '...' : 'NO KEY');
     
+    // Check if we should use mock data (for development/testing)
+    const USE_MOCK_DATA = process.env.USE_MOCK_DATA === 'true' || !serpApiKey;
+    
+    if (USE_MOCK_DATA) {
+      console.log('Using mock data for Google Scholar search');
+      const mockData = {
+        organic_results: [
+          {
+            position: 0,
+            title: `Sample Paper: ${q}`,
+            result_id: "mock_1",
+            link: "https://example.com/paper1",
+            snippet: `This is a mock paper about ${q}. This data is for testing purposes only.`,
+            publication_info: {
+              summary: "J Smith - 2024 - Mock Journal",
+              authors: [{ name: "J Smith", author_id: "mock_author_1" }]
+            },
+            inline_links: {
+              cited_by: { total: 42, link: "#" },
+              versions: { total: 2, link: "#" }
+            }
+          },
+          {
+            position: 1,
+            title: `Research on ${q} Applications`,
+            result_id: "mock_2",
+            link: "https://example.com/paper2",
+            snippet: `Another mock paper exploring applications of ${q} in various fields.`,
+            publication_info: {
+              summary: "A Johnson - 2023 - Science Review",
+              authors: [{ name: "A Johnson", author_id: "mock_author_2" }]
+            },
+            inline_links: {
+              cited_by: { total: 15, link: "#" }
+            }
+          }
+        ],
+        search_metadata: {
+          status: "Success (Mock Data)",
+          total_results: 2
+        }
+      };
+      return res.json(mockData);
+    }
+    
     const response = await axios.get(url, { params });
     console.log('SerpAPI response received, result count:', response.data.organic_results?.length || 0);
     
@@ -174,20 +219,59 @@ app.get('/api/scholar', async (req, res) => {
       console.error('Response status:', error.response.status);
       console.error('Response data:', error.response.data);
       
-      // If SERPAPI returns an error, send more details
-      if (error.response.data && error.response.data.error) {
-        return res.status(500).json({ 
-          error: 'SERPAPI Error',
-          message: error.response.data.error,
-          details: 'Please check your SERPAPI key is valid and has remaining credits'
-        });
+      // If SERPAPI fails with 401 or other errors, fall back to mock data
+      if (error.response.status === 401 || error.response.status === 403) {
+        console.log('SERPAPI authentication failed, returning mock data');
+        const mockData = {
+          organic_results: [
+            {
+              position: 0,
+              title: `Sample Paper: ${req.query.q}`,
+              result_id: "mock_fallback_1",
+              link: "https://example.com/paper1",
+              snippet: `This is mock data because SERPAPI authentication failed. Please check your API key.`,
+              publication_info: {
+                summary: "Mock Author - 2024 - Test Journal",
+                authors: [{ name: "Mock Author", author_id: "mock_author" }]
+              },
+              inline_links: {
+                cited_by: { total: 0, link: "#" }
+              }
+            }
+          ],
+          search_metadata: {
+            status: "Mock Data (SERPAPI Auth Failed)",
+            total_results: 1,
+            error_message: "Using mock data because SERPAPI authentication failed"
+          }
+        };
+        return res.json(mockData);
       }
     }
-    res.status(500).json({ 
-      error: 'Failed to fetch from Google Scholar',
-      message: error.message,
-      hint: 'Check Render logs for details'
-    });
+    
+    // For other errors, still return mock data but with error info
+    console.log('API error occurred, returning mock data');
+    const mockData = {
+      organic_results: [
+        {
+          position: 0,
+          title: `Error: Unable to fetch real data`,
+          result_id: "error_mock",
+          link: "#",
+          snippet: `Error: ${error.message}. Using mock data for testing.`,
+          publication_info: {
+            summary: "Error - Mock Data",
+            authors: []
+          }
+        }
+      ],
+      search_metadata: {
+        status: "Error (Using Mock Data)",
+        total_results: 0,
+        error: error.message
+      }
+    };
+    res.json(mockData);
   }
 });
 
