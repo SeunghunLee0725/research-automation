@@ -27,14 +27,15 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   console.log('Fetching:', fullUrl);
   console.log('Headers:', headers);
   
-  const fetchOptions = {
+  const fetchOptions: RequestInit = {
     method: options.method || 'GET',
     headers: {
       ...headers,
       ...options.headers
     },
     body: options.body,
-    credentials: 'include' as RequestCredentials
+    mode: 'cors' // Explicitly set CORS mode
+    // Don't set credentials - let it default to 'same-origin'
   };
   
   console.log('Fetch options:', fetchOptions);
