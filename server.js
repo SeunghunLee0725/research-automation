@@ -544,6 +544,8 @@ app.post('/api/papers/save', authenticateUser, async (req, res) => {
     
     // Save papers to Supabase
     const savedPapers = [];
+    const duplicatesSkipped = [];
+    
     for (const paper of papers) {
       try {
         const savedPaper = await dbHelpers.savePaper(userId, {
@@ -553,145 +555,43 @@ app.post('/api/papers/save', authenticateUser, async (req, res) => {
         });
         savedPapers.push(savedPaper);
       } catch (error) {
-        console.error('Error saving paper:', error);
+        // Check if it's a duplicate error
+        if (error.message && error.message.includes('duplicate')) {
+          duplicatesSkipped.push(paper.title);
+        } else {
+          console.error('Error saving paper:', error);
+        }
       }
     }
     
     // Log search history
     if (searchInfo && searchInfo.query) {
-      await dbHelpers.logSearch(userId, {
-        query: searchInfo.query,
-        source: searchInfo.source || 'unknown',
-        filters: searchInfo,
-        resultsCount: papers.length
-      });
-    }
-    
-    // Check if file exists and handle overwrite
-    if (fs.existsSync(filepath) && !overwrite) {
-      // File exists and overwrite is false, return confirmation request
-      return res.json({
-        requiresConfirmation: true,
-        filename: filename,
-        message: `File "${filename}" already exists. Do you want to overwrite it?`
-      });
-    }
-    
-    // 기존 저장된 모든 논문 로드하여 중복 체크 (overwrite가 true이면 해당 파일 제외)
-    const existingPapers = new Map(); // title -> paper mapping for faster lookup
-    const existingDOIs = new Set(); // DOI set for duplicate check
-    
-    try {
-      const files = fs.readdirSync(savedPapersDir).filter(f => f.endsWith('.json'));
-      
-      for (const file of files) {
-        // If overwriting, skip the file being overwritten
-        if (overwrite && file === filename) {
-          continue;
-        }
-        
-        const existingFilepath = path.join(savedPapersDir, file);
-        const fileContent = fs.readFileSync(existingFilepath, 'utf8');
-        const data = JSON.parse(fileContent);
-        
-        if (data.papers && Array.isArray(data.papers)) {
-          data.papers.forEach(paper => {
-            // 제목 기반 중복 체크 (대소문자 구분 없이, 공백 정규화)
-            const normalizedTitle = paper.title.toLowerCase().replace(/\s+/g, ' ').trim();
-            existingPapers.set(normalizedTitle, paper);
-            
-            // DOI 기반 중복 체크
-            if (paper.doi) {
-              existingDOIs.add(paper.doi.toLowerCase());
-            }
-          });
-        }
-      }
-    } catch (readError) {
-      console.log('No existing papers or error reading:', readError.message);
-    }
-    
-    // 중복되지 않은 논문만 필터링
-    const newPapers = [];
-    const duplicates = [];
-    
-    papers.forEach(paper => {
-      const normalizedTitle = paper.title.toLowerCase().replace(/\s+/g, ' ').trim();
-      const isDuplicateTitle = existingPapers.has(normalizedTitle);
-      const isDuplicateDOI = paper.doi && existingDOIs.has(paper.doi.toLowerCase());
-      
-      if (isDuplicateTitle || isDuplicateDOI) {
-        duplicates.push({
-          title: paper.title,
-          reason: isDuplicateDOI ? 'DOI duplicate' : 'Title duplicate'
+      try {
+        await dbHelpers.logSearch(userId, {
+          query: searchInfo.query,
+          source: searchInfo.source || 'unknown',
+          filters: searchInfo,
+          resultsCount: papers.length
         });
-        console.log(`Duplicate found: ${paper.title} (${isDuplicateDOI ? 'DOI' : 'Title'})`);
-      } else {
-        newPapers.push(paper);
+      } catch (error) {
+        console.error('Error logging search:', error);
+        // Don't fail the whole request if logging fails
       }
+    }
+    
+    // Return success response
+    res.json({
+      success: true,
+      count: savedPapers.length,
+      duplicatesSkipped: duplicatesSkipped.length,
+      message: `Saved ${savedPapers.length} papers${duplicatesSkipped.length > 0 ? ` (${duplicatesSkipped.length} duplicates skipped)` : ''}`
     });
     
-    console.log(`Processing ${papers.length} papers: ${newPapers.length} new, ${duplicates.length} duplicates`);
-    
-    // 새로운 논문이 있거나 덮어쓰기인 경우 저장
-    if (newPapers.length > 0 || overwrite) {
-      
-      // 저장할 데이터 준비
-      const saveData = {
-        savedAt: new Date().toISOString(),
-        totalCount: newPapers.length,
-        searchInfo: searchInfo || {
-          query: '',
-          sources: [],
-          yearFrom: null,
-          yearTo: null,
-          maxResults: null
-        },
-        papers: newPapers.map(paper => {
-          // Enrich paper with journal info
-          const enrichedPaper = enrichPaperWithJournalInfo({
-            id: paper.id,
-            title: paper.title,
-            authors: paper.authors,
-            abstract: paper.abstract,
-            source: paper.source,
-            journal: paper.journal,
-            quartile: paper.quartile,
-            citations: paper.citations,
-            publishedDate: paper.publishedDate,
-            url: paper.url,
-            doi: paper.doi
-          });
-          return enrichedPaper;
-        })
-      };
-      
-      // JSON 파일로 저장
-      fs.writeFileSync(filepath, JSON.stringify(saveData, null, 2), 'utf8');
-      console.log(`Papers saved to: ${filepath}`);
-      
-      res.json({ 
-        success: true, 
-        message: `Successfully saved ${newPapers.length} new papers (${duplicates.length} duplicates skipped)`,
-        filename: filename,
-        count: newPapers.length,
-        duplicatesSkipped: duplicates.length,
-        duplicates: duplicates
-      });
-    } else {
-      res.json({ 
-        success: true, 
-        message: `All ${papers.length} papers already exist in database`,
-        count: 0,
-        duplicatesSkipped: duplicates.length,
-        duplicates: duplicates
-      });
-    }
   } catch (error) {
-    console.error('Save papers error:', error.message);
+    console.error('Error in /api/papers/save:', error);
     res.status(500).json({ 
       error: 'Failed to save papers',
-      message: error.message 
+      details: error.message 
     });
   }
 });
