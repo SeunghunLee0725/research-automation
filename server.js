@@ -548,9 +548,13 @@ app.post('/api/papers/save', authenticateUser, async (req, res) => {
     
     for (const paper of papers) {
       try {
+        // Normalize the date field name
+        const publicationDate = paper.publicationDate || paper.publishedDate || paper.publication_date;
+        
         const savedPaper = await dbHelpers.savePaper(userId, {
           ...paper,
-          source: searchInfo?.source || 'unknown',
+          publicationDate: publicationDate, // Ensure consistent field name
+          source: searchInfo?.source || paper.source || 'unknown',
           metadata: { searchInfo }
         });
         savedPapers.push(savedPaper);
@@ -559,12 +563,15 @@ app.post('/api/papers/save', authenticateUser, async (req, res) => {
         if (error.message && error.message.includes('duplicate')) {
           duplicatesSkipped.push(paper.title);
         } else {
-          console.error('Error saving paper:', error);
+          console.error('Error saving paper:', paper.title, error);
+          console.error('Paper data:', JSON.stringify(paper, null, 2));
         }
       }
     }
     
-    // Log search history
+    // Log search history (commented out until search_history table is created)
+    // TODO: Create search_history table in Supabase if needed
+    /*
     if (searchInfo && searchInfo.query) {
       try {
         await dbHelpers.logSearch(userId, {
@@ -578,6 +585,7 @@ app.post('/api/papers/save', authenticateUser, async (req, res) => {
         // Don't fail the whole request if logging fails
       }
     }
+    */
     
     // Return success response
     res.json({
@@ -589,9 +597,11 @@ app.post('/api/papers/save', authenticateUser, async (req, res) => {
     
   } catch (error) {
     console.error('Error in /api/papers/save:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       error: 'Failed to save papers',
-      details: error.message 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
