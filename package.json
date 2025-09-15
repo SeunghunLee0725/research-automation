@@ -9,7 +9,11 @@
     "dev:all": "npm run server & npm run dev",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server.js",
+    "build:server": "echo 'No build needed for server'",
+    "deploy:vercel": "vercel",
+    "deploy:all": "npm run build && npm run deploy:vercel"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
