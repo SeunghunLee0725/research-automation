@@ -27,7 +27,12 @@ function initSupabase() {
 // Initialize on first use
 function getSupabase() {
   if (!supabase) {
-    initSupabase();
+    try {
+      initSupabase();
+    } catch (error) {
+      console.error('Failed to initialize Supabase:', error);
+      throw new Error('Database connection failed');
+    }
   }
   return supabase;
 }
@@ -66,15 +71,27 @@ async function authenticateUser(req, res, next) {
 const dbHelpers = {
   // Save paper to database
   async savePaper(userId, paperData) {
+    // Convert publication date to DATE format (YYYY-MM-DD)
+    let publicationDate = null;
+    if (paperData.publicationDate) {
+      try {
+        const date = new Date(paperData.publicationDate);
+        publicationDate = date.toISOString().split('T')[0]; // Get YYYY-MM-DD
+      } catch (e) {
+        console.error('Error parsing date:', paperData.publicationDate);
+      }
+    }
+    
     const { data, error } = await getSupabase()
       .from('saved_papers')
       .insert({
         user_id: userId,
         title: paperData.title,
-        authors: paperData.authors,
+        authors: Array.isArray(paperData.authors) ? paperData.authors : 
+                paperData.authors ? [paperData.authors] : [],
         abstract: paperData.abstract,
         journal: paperData.journal,
-        publication_date: paperData.publicationDate,
+        publication_date: publicationDate,
         doi: paperData.doi,
         url: paperData.url,
         source: paperData.source,

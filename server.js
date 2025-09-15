@@ -569,9 +569,7 @@ app.post('/api/papers/save', authenticateUser, async (req, res) => {
       }
     }
     
-    // Log search history (commented out until search_history table is created)
-    // TODO: Create search_history table in Supabase if needed
-    /*
+    // Log search history
     if (searchInfo && searchInfo.query) {
       try {
         await dbHelpers.logSearch(userId, {
@@ -585,7 +583,6 @@ app.post('/api/papers/save', authenticateUser, async (req, res) => {
         // Don't fail the whole request if logging fails
       }
     }
-    */
     
     // Return success response
     res.json({
