@@ -1,5 +1,6 @@
 import { apiEndpoints } from '../../config/api';
 import { api } from '../../utils/api';
+import { supabase } from '../../lib/supabase';
 import React, { useState } from 'react';
 import {
   Box,
@@ -137,6 +138,14 @@ const PaperList: React.FC = () => {
   
   
   const handleSaveSelected = async (overwrite = false) => {
+    // Check if user is logged in first
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      alert('Please log in to save papers');
+      window.location.href = '/auth';
+      return;
+    }
+    
     const papersToSave = papers.filter(p => selectedPapers.has(p.id));
     
     console.log('Saving papers:', papersToSave.length, 'papers selected');
@@ -237,9 +246,11 @@ const PaperList: React.FC = () => {
         alert(message);
         // Clear selection after successful save
         setSelectedPapers(new Set());
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving papers:', error);
-      alert('Error saving papers. Please check if the server is running on port 3001.');
+      // Show the actual error message from the server
+      const errorMessage = error.message || 'Unknown error occurred';
+      alert(`Error saving papers: ${errorMessage}`);
     }
   };
 
