@@ -34,6 +34,8 @@ const corsOptions = {
       'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:3000',
+      'https://research-automation-beta.vercel.app',
+      'https://research-automation.vercel.app',
       process.env.FRONTEND_URL
     ].filter(Boolean);
     
