@@ -1,3 +1,4 @@
+import { apiEndpoints } from '../../config/api';
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -68,7 +69,7 @@ const TextAnalyzer: React.FC = () => {
   const loadSavedFiles = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get('http://localhost:3001/api/saved-papers');
+      const response = await axios.get(apiEndpoints.savedPapers);
       setSavedFiles(response.data.files || []);
       setError(null);
     } catch (err) {
@@ -89,7 +90,7 @@ const TextAnalyzer: React.FC = () => {
     setError(null);
 
     try {
-      const response = await axios.post('http://localhost:3001/api/analyze-papers', {
+      const response = await axios.post(apiEndpoints.analyzePapers, {
         filename: selectedFile
       });
 

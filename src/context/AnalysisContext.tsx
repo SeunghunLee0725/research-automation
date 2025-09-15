@@ -1,3 +1,4 @@
+import { apiEndpoints } from '../config/api';
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import axios from 'axios';
 
@@ -50,7 +51,7 @@ export const AnalysisProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     try {
       // Perform analysis in background
-      const response = await axios.post('http://localhost:3001/api/analyze-papers', {
+      const response = await axios.post(apiEndpoints.analyzePapers, {
         filename
       });
 

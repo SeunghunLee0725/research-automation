@@ -1,3 +1,4 @@
+import { apiEndpoints } from '../../config/api';
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -105,7 +106,7 @@ const Paperwork: React.FC = () => {
 
   const loadAvailableAnalyses = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/analysis-results');
+      const response = await axios.get(apiEndpoints.analysisResults);
       if (response.data && Array.isArray(response.data)) {
         setAvailableAnalyses(response.data);
       }
@@ -117,7 +118,7 @@ const Paperwork: React.FC = () => {
 
   const loadSavedPaperPlans = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/paper-plans');
+      const response = await axios.get(apiEndpoints.paperPlans);
       if (response.data && Array.isArray(response.data)) {
         setPaperPlans(response.data);
       }
@@ -128,7 +129,7 @@ const Paperwork: React.FC = () => {
 
   const loadSavedIntroductions = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/saved-introductions');
+      const response = await axios.get(apiEndpoints.savedIntroductions);
       if (response.data && Array.isArray(response.data)) {
         setSavedIntroductions(response.data);
       }
@@ -144,14 +145,14 @@ const Paperwork: React.FC = () => {
     if (analysisId) {
       setLoading(true);
       try {
-        const response = await axios.get(`http://localhost:3001/api/analysis-results/${analysisId}`);
+        const response = await axios.get(apiEndpoints.getAnalysisResult(analysisId));
         setAnalysisData(response.data);
         setError(null);
         
         // Load papers from the selected file
         if (response.data.metadata?.selectedFile) {
           try {
-            const papersResponse = await axios.get(`http://localhost:3001/api/saved-papers/${response.data.metadata.selectedFile}`);
+            const papersResponse = await axios.get(apiEndpoints.getSavedPapersFile(response.data.metadata.selectedFile));
             if (papersResponse.data && papersResponse.data.papers) {
               // Store papers in analysisData for later use
               response.data.papers = papersResponse.data.papers;
@@ -189,7 +190,7 @@ const Paperwork: React.FC = () => {
     setError(null);
     
     try {
-      const response = await axios.post('http://localhost:3001/api/paperwork/generate-introduction', {
+      const response = await axios.post(apiEndpoints.paperworkGenerateIntroduction, {
         analysisData: analysisData.result,
         papers: analysisData.papers || []
       });
@@ -237,7 +238,7 @@ const Paperwork: React.FC = () => {
         timestamp: new Date().toISOString()
       };
       
-      await axios.post('http://localhost:3001/api/save-introduction', savedIntro);
+      await axios.post(apiEndpoints.saveIntroduction, savedIntro);
       
       setSavedIntroductions([...savedIntroductions, savedIntro]);
       setError(null);
@@ -260,7 +261,7 @@ const Paperwork: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this introduction?')) return;
 
     try {
-      await axios.delete(`http://localhost:3001/api/saved-introductions/${introId}`);
+      await axios.delete(apiEndpoints.getIntroduction(introId));
       setSavedIntroductions(savedIntroductions.filter(i => i.id !== introId));
     } catch (error) {
       console.error('Failed to delete introduction:', error);
@@ -278,7 +279,7 @@ const Paperwork: React.FC = () => {
     setError(null);
     
     try {
-      const response = await axios.post('http://localhost:3001/api/generate-paper-plan', {
+      const response = await axios.post(apiEndpoints.generatePaperPlan, {
         analysisData: analysisData.result,
         papers: analysisData.papers || [],
         introduction: introduction
@@ -309,7 +310,7 @@ const Paperwork: React.FC = () => {
         ...currentPlan,
         analysisId: currentPlan.analysisId || selectedAnalysis
       };
-      await axios.post('http://localhost:3001/api/save-paper-plan', planToSave);
+      await axios.post(apiEndpoints.savePaperPlan, planToSave);
       
       setPaperPlans([...paperPlans, currentPlan]);
       setOpenDialog(false);
@@ -330,7 +331,7 @@ const Paperwork: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this paper plan?')) return;
 
     try {
-      await axios.delete(`http://localhost:3001/api/paper-plans/${planId}`);
+      await axios.delete(apiEndpoints.deletePaperPlan(planId));
       setPaperPlans(paperPlans.filter(p => p.id !== planId));
     } catch (error) {
       console.error('Failed to delete paper plan:', error);

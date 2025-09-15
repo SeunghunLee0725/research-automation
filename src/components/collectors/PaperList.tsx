@@ -1,3 +1,4 @@
+import { apiEndpoints } from '../../config/api';
 import React, { useState } from 'react';
 import {
   Box,
@@ -103,7 +104,7 @@ const PaperList: React.FC = () => {
     setAnalyzing(paper.id);
     try {
       console.log('Analyzing paper:', paper.title);
-      const response = await fetch('http://localhost:3001/api/analyze', {
+      const response = await fetch(apiEndpoints.analyze, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -202,7 +203,7 @@ const PaperList: React.FC = () => {
       });
       
       // Backend API에 저장 요청
-      const response = await fetch('http://localhost:3001/api/papers/save', {
+      const response = await fetch(apiEndpoints.savePapers, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

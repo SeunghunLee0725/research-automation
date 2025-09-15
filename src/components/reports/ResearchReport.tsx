@@ -1,3 +1,4 @@
+import { apiEndpoints } from '../../config/api';
 import React, { useState, useEffect } from 'react';
 import ContentCopy from '@mui/icons-material/ContentCopy';
 import {
@@ -133,7 +134,7 @@ const ResearchReport: React.FC = () => {
 
   const loadSavedIntroductions = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/saved-introductions');
+      const response = await axios.get(apiEndpoints.savedIntroductions);
       setSavedIntroductions(response.data.introductions || []);
     } catch (error) {
       console.error('Error loading saved introductions:', error);
@@ -143,7 +144,7 @@ const ResearchReport: React.FC = () => {
   const loadIntroduction = async (introId: string) => {
     try {
       setIntroLoading(true);
-      const response = await axios.get(`http://localhost:3001/api/saved-introductions/${introId}`);
+      const response = await axios.get(apiEndpoints.getIntroduction(introId));
       setIntroductionData(response.data);
       setShowIntroduction(true);
       setShowIntroHistory(false);
@@ -161,7 +162,7 @@ const ResearchReport: React.FC = () => {
 
   const deleteIntroduction = async (introId: string) => {
     try {
-      await axios.delete(`http://localhost:3001/api/saved-introductions/${introId}`);
+      await axios.delete(apiEndpoints.getIntroduction(introId));
       loadSavedIntroductions();
     } catch (error) {
       console.error('Error deleting introduction:', error);
@@ -178,7 +179,7 @@ const ResearchReport: React.FC = () => {
   const loadSavedAnalyses = async () => {
     try {
       setAnalysesLoading(true);
-      const response = await axios.get('http://localhost:3001/api/saved-analyses');
+      const response = await axios.get(apiEndpoints.savedAnalyses);
       setSavedAnalyses(response.data.analyses || []);
     } catch (error) {
       console.error('Error loading saved analyses:', error);
@@ -190,7 +191,7 @@ const ResearchReport: React.FC = () => {
   const loadAnalysis = async (analysisId: string) => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:3001/api/saved-analyses/${analysisId}`);
+      const response = await axios.get(apiEndpoints.getSavedAnalysis(analysisId));
       setAnalysisResult(response.data.result);
       setSelectedFile(response.data.metadata.selectedFile);
       setExperimentMethod(response.data.metadata.userResearch.method);
@@ -213,7 +214,7 @@ const ResearchReport: React.FC = () => {
 
   const deleteAnalysis = async (analysisId: string) => {
     try {
-      await axios.delete(`http://localhost:3001/api/saved-analyses/${analysisId}`);
+      await axios.delete(apiEndpoints.getSavedAnalysis(analysisId));
       loadSavedAnalyses();
     } catch (error) {
       console.error('Error deleting analysis:', error);
@@ -368,7 +369,7 @@ const ResearchReport: React.FC = () => {
   const loadSavedFiles = async () => {
     try {
       setFilesLoading(true);
-      const response = await axios.get('http://localhost:3001/api/saved-papers');
+      const response = await axios.get(apiEndpoints.savedPapers);
       // API returns { files: [...] } structure
       if (response.data && response.data.files && Array.isArray(response.data.files)) {
         const files = response.data.files.map((file: any) => ({
@@ -408,7 +409,7 @@ const ResearchReport: React.FC = () => {
     setAnalysisResult(null);
 
     try {
-      const response = await axios.post('http://localhost:3001/api/research-analysis', {
+      const response = await axios.post(apiEndpoints.researchAnalysis, {
         selectedFile,
         userResearch: {
           method: experimentMethod,
@@ -443,7 +444,7 @@ const ResearchReport: React.FC = () => {
     setError('');
     
     try {
-      const response = await axios.post('http://localhost:3001/api/generate-introduction', {
+      const response = await axios.post(apiEndpoints.generateIntroduction, {
         analysisResult,
         selectedFile,
         userResearch: {

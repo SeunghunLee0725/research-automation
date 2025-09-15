@@ -1,3 +1,4 @@
+import { apiEndpoints } from '../../config/api';
 import React, { useState } from 'react';
 import {
   Box,
@@ -20,6 +21,8 @@ import axios from 'axios';
 import { useApp } from '../../contexts/AppContext';
 import { Paper } from '../../types';
 import journalService from '../../services/journalService';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const PaperCollector: React.FC = () => {
   const { papers, setPapers, setError } = useApp();
@@ -115,7 +118,7 @@ const PaperCollector: React.FC = () => {
           const fullQuery = includeQuery + excludeQuery;
           console.log('Calling Google Scholar API with query:', fullQuery);
           // Use backend proxy for Google Scholar
-          const response = await axios.get('http://localhost:3001/api/scholar', {
+          const response = await axios.get(`${API_BASE_URL}/api/scholar`, {
             params: { 
               q: fullQuery,
               num: maxResults,
@@ -211,7 +214,7 @@ const PaperCollector: React.FC = () => {
           const fullQuery = includeQuery + excludeQuery;
           console.log('Calling PubMed API with query:', fullQuery);
           // Use backend proxy for PubMed
-          const response = await axios.get('http://localhost:3001/api/pubmed/search', {
+          const response = await axios.get(`${API_BASE_URL}/api/pubmed/search`, {
             params: { 
               term: fullQuery,
               retmax: maxResults,
@@ -293,7 +296,7 @@ const PaperCollector: React.FC = () => {
           const fullQuery = includeQuery + excludeQuery;
           console.log('Calling USPTO API with query:', fullQuery);
           // Use backend proxy for USPTO
-          const response = await axios.get('http://localhost:3001/api/uspto/search', {
+          const response = await axios.get(`${API_BASE_URL}/api/uspto/search`, {
             params: { 
               query: fullQuery,
               numOfRows: maxResults,

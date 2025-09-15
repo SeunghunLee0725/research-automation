@@ -1,3 +1,4 @@
+import { apiEndpoints } from '../../config/api';
 import React, { useState, useEffect } from 'react';
 import { useAnalysis } from '../../context/AnalysisContext';
 import {
@@ -86,7 +87,7 @@ const SavedPapers: React.FC = () => {
   const loadSavedFiles = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:3001/api/saved-papers');
+      const response = await axios.get(apiEndpoints.savedPapers);
       setSavedFiles(response.data.files || []);
       setError(null);
     } catch (err) {
@@ -141,7 +142,7 @@ const SavedPapers: React.FC = () => {
     if (!window.confirm('이 파일을 삭제하시겠습니까?')) return;
     
     try {
-      await axios.delete(`http://localhost:3001/api/saved-papers/${encodeURIComponent(filename)}`);
+      await axios.delete(apiEndpoints.deletePaper(filename));
       await loadSavedFiles();
     } catch (err) {
       console.error('Error deleting file:', err);

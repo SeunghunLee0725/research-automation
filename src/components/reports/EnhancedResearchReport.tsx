@@ -1,3 +1,4 @@
+import { apiEndpoints } from '../../config/api';
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -120,7 +121,7 @@ const EnhancedResearchReport: React.FC = () => {
   const loadSavedFiles = async () => {
     try {
       setFilesLoading(true);
-      const response = await axios.get('http://localhost:3001/api/saved-papers');
+      const response = await axios.get(apiEndpoints.savedPapers);
       if (response.data && response.data.files && Array.isArray(response.data.files)) {
         setSavedFiles(response.data.files);
       }
@@ -197,7 +198,7 @@ const EnhancedResearchReport: React.FC = () => {
 
   const performEnhancedAnalysis = async () => {
     // Load paper data
-    const paperResponse = await axios.get(`http://localhost:3001/api/saved-papers/${selectedFile}`);
+    const paperResponse = await axios.get(apiEndpoints.getSavedPapersFile(selectedFile));
     const papers = paperResponse.data.papers || [];
     
     // Generate enhanced prompt
@@ -214,7 +215,7 @@ const EnhancedResearchReport: React.FC = () => {
     );
     
     // Call enhanced API endpoint
-    const response = await axios.post('http://localhost:3001/api/enhanced-research-analysis', {
+    const response = await axios.post(apiEndpoints.enhancedResearchAnalysis, {
       selectedFile,
       userResearch: {
         method: experimentMethod,

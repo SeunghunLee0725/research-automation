@@ -1,3 +1,4 @@
+import { apiEndpoints } from '../../config/api';
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -97,7 +98,7 @@ const TrendAnalysis: React.FC = () => {
 
   const loadAvailableFiles = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/saved-papers');
+      const response = await axios.get(apiEndpoints.savedPapers);
       const files = (response.data.files || []).map((file: any) => ({
         ...file,
         paperCount: file.totalCount || file.paperCount || file.papers?.length || 0
@@ -112,8 +113,8 @@ const TrendAnalysis: React.FC = () => {
     try {
       setLoading(true);
       const url = selectedFile === 'all' 
-        ? 'http://localhost:3001/api/trends'
-        : `http://localhost:3001/api/trends?file=${selectedFile}`;
+        ? apiEndpoints.trends
+        : apiEndpoints.trendsWithFile(selectedFile);
       const response = await axios.get(url);
       setTrendsData(response.data);
       setError(null);
@@ -132,7 +133,7 @@ const TrendAnalysis: React.FC = () => {
   const handleAuthorClick = async (author: any) => {
     try {
       setSelectedAuthor(author);
-      const response = await axios.get(`http://localhost:3001/api/author-papers?author=${encodeURIComponent(author.author)}`);
+      const response = await axios.get(apiEndpoints.authorPapers(author.author));
       setAuthorPapers(response.data.papers || []);
       setAuthorDetailsOpen(true);
     } catch (err) {
@@ -145,7 +146,7 @@ const TrendAnalysis: React.FC = () => {
   const handleJournalClick = async (journal: any) => {
     try {
       setSelectedJournal(journal);
-      const response = await axios.get(`http://localhost:3001/api/journal-papers?journal=${encodeURIComponent(journal.journal)}`);
+      const response = await axios.get(apiEndpoints.journalPapers(journal.journal));
       setJournalPapers(response.data.papers || []);
       setJournalDetailsOpen(true);
     } catch (err) {

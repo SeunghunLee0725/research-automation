@@ -1,3 +1,4 @@
+import { apiEndpoints } from '../../config/api';
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -62,13 +63,13 @@ const Settings: React.FC = () => {
     try {
       setLoading(true);
       // Load temperature settings
-      const tempResponse = await axios.get('http://localhost:3001/api/settings/temperature');
+      const tempResponse = await axios.get(apiEndpoints.settingsTemperature);
       if (tempResponse.data) {
         setTemperatures(tempResponse.data);
       }
       
       // Load API key status
-      const apiKeyResponse = await axios.get('http://localhost:3001/api/settings/api-key-status');
+      const apiKeyResponse = await axios.get(apiEndpoints.settingsApiKeyStatus);
       if (apiKeyResponse.data) {
         setHasApiKey(apiKeyResponse.data.hasKey);
         if (apiKeyResponse.data.maskedKey) {
@@ -96,7 +97,7 @@ const Settings: React.FC = () => {
   const saveApiKey = async () => {
     try {
       setSaving(true);
-      await axios.post('http://localhost:3001/api/settings/api-key', { apiKey });
+      await axios.post(apiEndpoints.settingsApiKey, { apiKey });
       setHasApiKey(true);
       setSnackbar({
         open: true,
@@ -118,7 +119,7 @@ const Settings: React.FC = () => {
   const deleteApiKey = async () => {
     try {
       setSaving(true);
-      await axios.delete('http://localhost:3001/api/settings/api-key');
+      await axios.delete(apiEndpoints.settingsApiKey);
       setApiKey('');
       setHasApiKey(false);
       setSnackbar({
@@ -141,7 +142,7 @@ const Settings: React.FC = () => {
   const saveSettings = async () => {
     try {
       setSaving(true);
-      await axios.post('http://localhost:3001/api/settings/temperature', temperatures);
+      await axios.post(apiEndpoints.settingsTemperature, temperatures);
       setSnackbar({
         open: true,
         message: 'Temperature 설정이 저장되었습니다.',
