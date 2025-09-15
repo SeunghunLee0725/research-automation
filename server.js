@@ -131,7 +131,7 @@ function enrichPaperWithJournalInfo(paper) {
   return paper;
 }
 
-// Google Scholar API endpoint
+// Google Scholar API endpoint (with Puppeteer fallback)
 app.get('/api/scholar', async (req, res) => {
   try {
     const { q, num, as_ylo, as_yhi } = req.query;
@@ -144,75 +144,132 @@ app.get('/api/scholar', async (req, res) => {
       return res.status(400).json({ error: 'Query parameter is required' });
     }
     
-    if (!serpApiKey) {
-      console.error('SERPAPI_KEY not configured');
-      return res.status(500).json({ error: 'Search API not configured. Please set SERPAPI_KEY environment variable.' });
+    // Try SERPAPI first if key exists
+    if (serpApiKey && process.env.USE_SERPAPI !== 'false') {
+      try {
+        const url = `https://serpapi.com/search.json`;
+        const params = {
+          engine: 'google_scholar',
+          q: q,
+          api_key: serpApiKey,
+          num: num || 20,
+          as_ylo: as_ylo || undefined,
+          as_yhi: as_yhi || undefined,
+          hl: 'en',
+          scisbd: 0,
+        };
+
+        console.log('Trying SERPAPI...');
+        const response = await axios.get(url, { params });
+        console.log('SerpAPI success, result count:', response.data.organic_results?.length || 0);
+        return res.json(response.data);
+      } catch (serpError) {
+        console.log('SERPAPI failed, falling back to Puppeteer scraping');
+      }
     }
-
-    const url = `https://serpapi.com/search.json`;
-    const params = {
-      engine: 'google_scholar',
-      q: q,
-      api_key: serpApiKey,
-      num: num || 20,
-      as_ylo: as_ylo || undefined,
-      as_yhi: as_yhi || undefined,
-      hl: 'en',  // Language
-      scisbd: 0,  // Sort by relevance
-    };
-
-    console.log('Calling SerpAPI with params:', { ...params, api_key: '[REDACTED]' });
-    console.log('API Key first 10 chars:', serpApiKey ? serpApiKey.substring(0, 10) + '...' : 'NO KEY');
     
-    // Check if we should use mock data (for development/testing)
-    const USE_MOCK_DATA = process.env.USE_MOCK_DATA === 'true' || !serpApiKey;
+    // Fallback to Puppeteer scraping
+    console.log('Using Puppeteer to scrape Google Scholar directly');
     
-    if (USE_MOCK_DATA) {
-      console.log('Using mock data for Google Scholar search');
-      const mockData = {
-        organic_results: [
-          {
-            position: 0,
-            title: `Sample Paper: ${q}`,
-            result_id: "mock_1",
-            link: "https://example.com/paper1",
-            snippet: `This is a mock paper about ${q}. This data is for testing purposes only.`,
-            publication_info: {
-              summary: "J Smith - 2024 - Mock Journal",
-              authors: [{ name: "J Smith", author_id: "mock_author_1" }]
-            },
-            inline_links: {
-              cited_by: { total: 42, link: "#" },
-              versions: { total: 2, link: "#" }
+    const browser = await puppeteer.launch({
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    
+    try {
+      const page = await browser.newPage();
+      
+      // Set user agent to avoid detection
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      
+      // Build Google Scholar URL
+      let scholarUrl = `https://scholar.google.com/scholar?q=${encodeURIComponent(q)}`;
+      if (as_ylo) scholarUrl += `&as_ylo=${as_ylo}`;
+      if (as_yhi) scholarUrl += `&as_yhi=${as_yhi}`;
+      if (num) scholarUrl += `&num=${num}`;
+      
+      console.log('Navigating to:', scholarUrl);
+      await page.goto(scholarUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+      
+      // Wait for results
+      await page.waitForSelector('.gs_r', { timeout: 10000 }).catch(() => {
+        console.log('No results selector found, continuing...');
+      });
+      
+      // Extract results
+      const results = await page.evaluate(() => {
+        const papers = [];
+        const items = document.querySelectorAll('.gs_r.gs_or.gs_scl');
+        
+        items.forEach((item, index) => {
+          const titleElement = item.querySelector('h3.gs_rt a');
+          const snippetElement = item.querySelector('.gs_rs');
+          const authorsElement = item.querySelector('.gs_a');
+          const citedByElement = item.querySelector('.gs_fl a:first-child');
+          
+          if (titleElement) {
+            const paper = {
+              position: index,
+              title: titleElement.textContent || '',
+              link: titleElement.href || '',
+              snippet: snippetElement ? snippetElement.textContent : '',
+              result_id: `scholar_${index}`,
+              publication_info: {
+                summary: authorsElement ? authorsElement.textContent : '',
+                authors: []
+              },
+              inline_links: {
+                cited_by: {
+                  total: 0,
+                  link: citedByElement ? citedByElement.href : ''
+                }
+              }
+            };
+            
+            // Extract citation count
+            if (citedByElement && citedByElement.textContent) {
+              const match = citedByElement.textContent.match(/\d+/);
+              if (match) {
+                paper.inline_links.cited_by.total = parseInt(match[0]);
+              }
             }
-          },
-          {
-            position: 1,
-            title: `Research on ${q} Applications`,
-            result_id: "mock_2",
-            link: "https://example.com/paper2",
-            snippet: `Another mock paper exploring applications of ${q} in various fields.`,
-            publication_info: {
-              summary: "A Johnson - 2023 - Science Review",
-              authors: [{ name: "A Johnson", author_id: "mock_author_2" }]
-            },
-            inline_links: {
-              cited_by: { total: 15, link: "#" }
+            
+            // Parse authors from summary
+            if (authorsElement) {
+              const text = authorsElement.textContent;
+              const authorsPart = text.split(' - ')[0];
+              if (authorsPart) {
+                paper.publication_info.authors = authorsPart.split(', ').map(name => ({
+                  name: name.trim(),
+                  author_id: `author_${name.replace(/\s+/g, '_')}`
+                }));
+              }
             }
+            
+            papers.push(paper);
           }
-        ],
+        });
+        
+        return papers;
+      });
+      
+      await browser.close();
+      
+      const responseData = {
+        organic_results: results,
         search_metadata: {
-          status: "Success (Mock Data)",
-          total_results: 2
+          status: "Success (Puppeteer Scraping)",
+          total_results: results.length
         }
       };
-      return res.json(mockData);
+      
+      console.log('Puppeteer scraping successful, found', results.length, 'results');
+      res.json(responseData);
+      
+    } catch (puppeteerError) {
+      await browser.close();
+      throw puppeteerError;
     }
-    
-    const response = await axios.get(url, { params });
-    console.log('SerpAPI response received, result count:', response.data.organic_results?.length || 0);
-    
-    res.json(response.data);
   } catch (error) {
     console.error('Scholar API Error:', error.message);
     if (error.response) {
