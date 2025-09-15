@@ -162,6 +162,8 @@ app.get('/api/scholar', async (req, res) => {
     };
 
     console.log('Calling SerpAPI with params:', { ...params, api_key: '[REDACTED]' });
+    console.log('API Key first 10 chars:', serpApiKey ? serpApiKey.substring(0, 10) + '...' : 'NO KEY');
+    
     const response = await axios.get(url, { params });
     console.log('SerpAPI response received, result count:', response.data.organic_results?.length || 0);
     
@@ -171,10 +173,20 @@ app.get('/api/scholar', async (req, res) => {
     if (error.response) {
       console.error('Response status:', error.response.status);
       console.error('Response data:', error.response.data);
+      
+      // If SERPAPI returns an error, send more details
+      if (error.response.data && error.response.data.error) {
+        return res.status(500).json({ 
+          error: 'SERPAPI Error',
+          message: error.response.data.error,
+          details: 'Please check your SERPAPI key is valid and has remaining credits'
+        });
+      }
     }
     res.status(500).json({ 
       error: 'Failed to fetch from Google Scholar',
-      message: error.message 
+      message: error.message,
+      hint: 'Check Render logs for details'
     });
   }
 });
@@ -3275,6 +3287,12 @@ app.delete('/api/paper-plans/:id', authenticateUser, async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
+  console.log('Environment variables loaded:');
+  console.log('- SERPAPI_KEY:', process.env.SERPAPI_KEY ? 'SET (first 10: ' + process.env.SERPAPI_KEY.substring(0, 10) + '...)' : 'NOT SET');
+  console.log('- SUPABASE_URL:', process.env.SUPABASE_URL ? 'SET' : 'NOT SET');
+  console.log('- SUPABASE_SERVICE_KEY:', process.env.SUPABASE_SERVICE_KEY ? 'SET' : 'NOT SET');
+  console.log('- FRONTEND_URL:', process.env.FRONTEND_URL || 'NOT SET');
+  console.log('- PERPLEXITY_API_KEY:', process.env.PERPLEXITY_API_KEY ? 'SET' : 'NOT SET');
   console.log('Available endpoints:');
   console.log('  - GET /api/scholar?q=query&num=20&as_ylo=2020&as_yhi=2024');
   console.log('  - GET /api/pubmed/search?term=query&retmax=20&mindate=2020&maxdate=2024');
