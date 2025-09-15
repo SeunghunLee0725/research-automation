@@ -12,7 +12,6 @@ import {
   FormControl,
   InputLabel,
   Paper,
-  Divider,
   List,
   ListItem,
   ListItemText,
@@ -24,10 +23,8 @@ import {
 import {
   Analytics,
   ExpandMore,
-  Storage,
   Psychology,
   Description,
-  CalendarToday,
 } from '@mui/icons-material';
 import axios from 'axios';
 

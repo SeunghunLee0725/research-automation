@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   Typography,
-  Grid,
   CircularProgress,
   Alert,
   Paper,
@@ -15,7 +14,6 @@ import {
   Divider,
   Avatar,
   ListItemAvatar,
-  Tooltip,
   IconButton,
   Dialog,
   DialogTitle,
@@ -27,19 +25,17 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
+  Grid,
 } from '@mui/material';
 import {
   TrendingUp,
   Person,
   Book,
-  Group,
-  Label,
   Assessment,
   Refresh,
-  ShowChart,
 } from '@mui/icons-material';
-import CytoscapeNetworkGraph from '../visualizations/CytoscapeNetworkGraph';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
+import CytoscapeNetworkGraph from '../visualizations/CytoscapeNetworkGraph';
 import axios from 'axios';
 
 interface TrendsData {

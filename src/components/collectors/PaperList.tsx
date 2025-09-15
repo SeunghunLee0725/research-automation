@@ -19,14 +19,12 @@ import {
   TextField,
   InputAdornment,
   Checkbox,
-  FormControlLabel,
   Alert,
   CircularProgress,
 } from '@mui/material';
 import {
   OpenInNew,
   Visibility,
-  Analytics,
   Search,
   Save,
   SelectAll,
@@ -42,7 +40,6 @@ const PaperList: React.FC = () => {
   const { papers } = useApp();
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterSource, setFilterSource] = useState<string>('all');
   const [selectedPapers, setSelectedPapers] = useState<Set<string>>(new Set());
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [analyzing, setAnalyzing] = useState<string | null>(null);
@@ -58,7 +55,7 @@ const PaperList: React.FC = () => {
       paper.abstract.toLowerCase().includes(searchTerm.toLowerCase()) ||
       paper.authors.some(author => author.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesSource = filterSource === 'all' || paper.source === filterSource;
+    const matchesSource = true; // filterSource removed
     
     return matchesSearch && matchesSource;
   }).sort((a, b) => {
@@ -130,7 +127,7 @@ const PaperList: React.FC = () => {
       }
     } catch (error) {
       console.error('Error analyzing paper:', error);
-      alert(`Error analyzing paper: ${error.message}`);
+      alert(`Error analyzing paper: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setAnalyzing(null);
     }

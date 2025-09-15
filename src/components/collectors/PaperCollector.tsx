@@ -18,12 +18,11 @@ import {
 import { Search, Download, Block } from '@mui/icons-material';
 import axios from 'axios';
 import { useApp } from '../../contexts/AppContext';
-import { scholarService, pubmedService } from '../../services/api';
 import { Paper } from '../../types';
 import journalService from '../../services/journalService';
 
 const PaperCollector: React.FC = () => {
-  const { papers, setPapers, setLoading, setError } = useApp();
+  const { papers, setPapers, setError } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [source, setSource] = useState(() => localStorage.getItem('searchSource') || 'all');
   

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Fragment } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAnalysis } from '../../context/AnalysisContext';
 import {
   Box,
@@ -10,7 +10,6 @@ import {
   ListItemText,
   Chip,
   Button,
-  Grid,
   Paper,
   Divider,
   Alert,
@@ -24,13 +23,11 @@ import {
   AccordionSummary,
   AccordionDetails,
   IconButton,
+  Grid,
 } from '@mui/material';
 import { 
-  Storage, 
   Description,
   CalendarToday,
-  Source,
-  Download,
   Visibility,
   Delete,
   Psychology,
@@ -175,7 +172,7 @@ const SavedPapers: React.FC = () => {
     <Box>
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Storage color="primary" />
+          <Description color="primary" />
           저장된 논문 데이터베이스
         </Typography>
         <Typography variant="body1" color="textSecondary">
@@ -193,7 +190,7 @@ const SavedPapers: React.FC = () => {
         {savedFiles.length === 0 ? (
           <Grid item xs={12}>
             <Paper sx={{ p: 4, textAlign: 'center' }}>
-              <Storage sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+              <Description sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
               <Typography variant="h6" color="textSecondary" gutterBottom>
                 저장된 논문이 없습니다
               </Typography>
